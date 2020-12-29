@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Obj2ViewSpace : MonoBehaviour
+public class World2ViewSpace : MonoBehaviour
 {
     public GameObject camera;
 
