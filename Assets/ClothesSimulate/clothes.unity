@@ -728,8 +728,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9fc761728e1821e4c89eb38bb0b5143d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  go1: {fileID: 498202526}
-  go2: {fileID: 490131634}
+  width: 2
+  height: 1
+  gos:
+  - {fileID: 498202526}
+  - {fileID: 490131634}
   damp: 1
   elastic: 10
   inertia: 0.1

@@ -12,12 +12,12 @@ public class particle
 
 public class Spring : MonoBehaviour
 {
+    public int width = 2;
+    public int height = 2;
 
-    public GameObject go1;
-    public GameObject go2;
+    public GameObject[] gos;
 
-    public particle info1 = new particle();
-    public particle info2 = new particle();
+    public List<particle> infos = new List<particle>();
 
     /// <summary>
     /// 阻尼
@@ -56,10 +56,12 @@ public class Spring : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        info1.curPos = go1.transform.position;
-        info1.prePos = go1.transform.position;
-        info2.curPos = go2.transform.position;
-        info2.prePos = go2.transform.position;
+        for (int i = 0; i < gos.Length; i++)
+        {
+            particle p = new particle();
+            p.curPos = gos[i].transform.position;
+            infos.Add(p);
+        }
 
         var queue = new CoroutineQueue(2, StartCoroutine);
         queue.Run(DelayAddForce());
@@ -69,20 +71,59 @@ public class Spring : MonoBehaviour
     {
         yield return new WaitForSeconds(1);
         Debug.Log("===============");
-        go1.transform.Translate(-go1.transform.right * 0.1f);
-        go2.transform.Translate(go2.transform.right * 0.1f);
+
+        // gos[0].transform.Translate(-Vector3.right * 0.0001f);
+        // gos[1].transform.Translate(Vector3.right * 0.0001f);
     }
 
     // Update is called once per frame
     void Update()
     {
 
-
     }
 
     void LateUpdate()
     {
+        // for (int i = 0; i < gos.Length; i++)
+        // {
+        //     List<int> aroundList = new List<int>();
+        //     SingleAdd(aroundList, i - width - 1);
+        //     SingleAdd(aroundList, i - width);
+        //     SingleAdd(aroundList, i - width + 1);
+        //     SingleAdd(aroundList, i - width + 1);
+        //     SingleAdd(aroundList, i - 1);
+        //     SingleAdd(aroundList, i + 1);
+        //     SingleAdd(aroundList, i + width - 1);
+        //     SingleAdd(aroundList, i + width);
+        //     SingleAdd(aroundList, i + width + 1);
+        //
+        //     for (int j = 0; j < aroundList.Count; j++)
+        //     {
+        //         if (aroundList[j] >= 0 && aroundList[j] < gos.Length)
+        //         {
+        //             GameObject go1 = gos[i];
+        //             particle info1 = infos[i];
+        //             GameObject go2 = gos[aroundList[j]];
+        //             particle info2 = infos[aroundList[j]];
+        //             SpringSimulation(go1, info1, go2, info2);
+        //             
+        //         }
+        //     }
+        //     break;
+        // }
+        GameObject go1 = gos[0];
+        particle info1 = infos[0];
+        GameObject go2 = gos[1];
+        particle info2 = infos[1];
         SpringSimulation(go1, info1, go2, info2);
+    }
+
+    public void SingleAdd<T>(List<T> list, T value)
+    {
+        if (!list.Contains(value))
+        {
+            list.Add(value);
+        }
     }
 
     void SpringSimulation(GameObject go1, particle info1, GameObject go2, particle info2)
