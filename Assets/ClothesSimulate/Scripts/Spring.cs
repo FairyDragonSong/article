@@ -60,6 +60,7 @@ public class Spring : MonoBehaviour
         {
             particle p = new particle();
             p.curPos = gos[i].transform.position;
+            p.prePos = gos[i].transform.position;
             infos.Add(p);
         }
 
@@ -72,8 +73,8 @@ public class Spring : MonoBehaviour
         yield return new WaitForSeconds(1);
         Debug.Log("===============");
 
-        // gos[0].transform.Translate(-Vector3.right * 0.0001f);
-        // gos[1].transform.Translate(Vector3.right * 0.0001f);
+        gos[0].transform.Translate(-Vector3.right * 0.1f);
+        gos[1].transform.Translate(Vector3.right * 0.1f);
     }
 
     // Update is called once per frame
@@ -84,38 +85,39 @@ public class Spring : MonoBehaviour
 
     void LateUpdate()
     {
-        // for (int i = 0; i < gos.Length; i++)
-        // {
-        //     List<int> aroundList = new List<int>();
-        //     SingleAdd(aroundList, i - width - 1);
-        //     SingleAdd(aroundList, i - width);
-        //     SingleAdd(aroundList, i - width + 1);
-        //     SingleAdd(aroundList, i - width + 1);
-        //     SingleAdd(aroundList, i - 1);
-        //     SingleAdd(aroundList, i + 1);
-        //     SingleAdd(aroundList, i + width - 1);
-        //     SingleAdd(aroundList, i + width);
-        //     SingleAdd(aroundList, i + width + 1);
-        //
-        //     for (int j = 0; j < aroundList.Count; j++)
-        //     {
-        //         if (aroundList[j] >= 0 && aroundList[j] < gos.Length)
-        //         {
-        //             GameObject go1 = gos[i];
-        //             particle info1 = infos[i];
-        //             GameObject go2 = gos[aroundList[j]];
-        //             particle info2 = infos[aroundList[j]];
-        //             SpringSimulation(go1, info1, go2, info2);
-        //             
-        //         }
-        //     }
-        //     break;
-        // }
-        GameObject go1 = gos[0];
-        particle info1 = infos[0];
-        GameObject go2 = gos[1];
-        particle info2 = infos[1];
-        SpringSimulation(go1, info1, go2, info2);
+        for (int i = 0; i < gos.Length; i++)
+        {
+            List<int> aroundList = new List<int>();
+            // SingleAdd(aroundList, i - width - 1);
+            SingleAdd(aroundList, i - width);
+            // SingleAdd(aroundList, i - width + 1);
+            if (i % width > 1)
+            {
+                SingleAdd(aroundList, i - 1);
+            }
+            if (i % width < width - 1)
+            {
+                SingleAdd(aroundList, i + 1);
+            }
+            
+            // SingleAdd(aroundList, i + width - 1);
+            SingleAdd(aroundList, i + width);
+            // SingleAdd(aroundList, i + width + 1);
+        
+            for (int j = 0; j < aroundList.Count; j++)
+            {
+                if (aroundList[j] >= 0 && aroundList[j] < gos.Length)
+                {
+                    GameObject go1 = gos[i];
+                    particle info1 = infos[i];
+                    GameObject go2 = gos[aroundList[j]];
+                    particle info2 = infos[aroundList[j]];
+                    // Debug.Log(string.Format("{0} {1}", i, aroundList[j]));
+                    SpringSimulation(go1, info1, go2, info2);
+                    
+                }
+            }
+        }
     }
 
     public void SingleAdd<T>(List<T> list, T value)
