@@ -7,6 +7,7 @@ public class particle
     public Vector3 curPos;
     public Vector3 prePos;
     public Vector3 speed;
+    public float mass = 1;
 }
 
 public class Spring : MonoBehaviour
@@ -49,6 +50,9 @@ public class Spring : MonoBehaviour
     /// </summary>
     public float Lcritical = 0.5f;
 
+    private bool reverse = false;
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -72,12 +76,16 @@ public class Spring : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        info1.curPos = go1.transform.position;
-        info2.curPos = go2.transform.position;
+
 
     }
 
     void LateUpdate()
+    {
+        SpringSimulation(go1, info1, go2, info2);
+    }
+
+    void SpringSimulation(GameObject go1, particle info1, GameObject go2, particle info2)
     {
         CheckInertia(go1, info1);
         CheckInertia(go2, info2);
@@ -93,8 +101,6 @@ public class Spring : MonoBehaviour
         info.curPos = offsetVector3 + info.curPos;
     }
 
-    public bool rever = false;
-
     private void CheckSpring(GameObject go1, particle info1, GameObject go2, particle info2)
     {
         Vector3 delLen = go1.transform.position - go2.transform.position;
@@ -109,19 +115,17 @@ public class Spring : MonoBehaviour
 
             if (iExtentOfCritical <= 0.99)
             {
-                Debug.Log(iExtentOfCritical);
-
-                rever = true;
+                reverse = true;
                 iExtentOfCritical = iExtentOfCritical - 0.01f;
             }
 
-            speed1 = info1.speed * (1 - iExtentOfCritical) * (rever ? -1 : 1);
-            speed2 = info2.speed * (1 - iExtentOfCritical) * (rever ? -1 : 1);
+            speed1 = info1.speed * (1 - iExtentOfCritical) * (reverse ? -1 : 1);
+            speed2 = info2.speed * (1 - iExtentOfCritical) * (reverse ? -1 : 1);
 
         }
         else
         {
-            rever = false;
+            reverse = false;
             // 阻尼力和弹力计算
             Vector3 elasF1;
             Vector3 elasF2;
@@ -129,12 +133,9 @@ public class Spring : MonoBehaviour
             elasF1 = -(delLen.magnitude - L0) * elastic * delLen / delLen.magnitude - damp * (speed1 - speed2);
             elasF2 = -elasF1;
 
-            // 质量
-            float mass1 = 1f;
-            float mass2 = 1f;
             // 加速度
-            Vector3 a1 = elasF1 / mass1;
-            Vector3 a2 = elasF2 / mass2;
+            Vector3 a1 = elasF1 / info1.mass;
+            Vector3 a2 = elasF2 / info2.mass;
 
             speed1 += a1 * Time.deltaTime;
             speed2 += a2 * Time.deltaTime;
