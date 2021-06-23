@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,6 +15,8 @@ public class Spring : MonoBehaviour
 {
     public int width = 2;
     public int height = 2;
+
+    CoroutineQueue queue;
 
     public GameObject[] gos;
 
@@ -64,17 +67,24 @@ public class Spring : MonoBehaviour
             infos.Add(p);
         }
 
-        var queue = new CoroutineQueue(2, StartCoroutine);
+        queue = new CoroutineQueue(2, StartCoroutine);
         queue.Run(DelayAddForce());
     }
 
     IEnumerator DelayAddForce()
     {
         yield return new WaitForSeconds(1);
-        Debug.Log("===============");
 
         gos[0].transform.Translate(-Vector3.right * 0.1f);
         gos[1].transform.Translate(Vector3.right * 0.1f);
+    }
+
+    void OnGUI()
+    {
+        if (GUI.Button(new Rect(0, 0, 100, 50), "弹"))
+        {
+            queue.Run(DelayAddForce());
+        }
     }
 
     // Update is called once per frame
@@ -87,33 +97,33 @@ public class Spring : MonoBehaviour
     {
         for (int i = 0; i < gos.Length; i++)
         {
-            List<int> aroundList = new List<int>();
-            // SingleAdd(aroundList, i - width - 1);
-            SingleAdd(aroundList, i - width);
-            // SingleAdd(aroundList, i - width + 1);
-            if (i % width > 1)
+            List<Tuple<int, double>> aroundList = new List<Tuple<int, double>>();
+            SingleAdd(aroundList, new Tuple<int, double>(i - width, L0));
+            if ((i + 1) % width != 1)
             {
-                SingleAdd(aroundList, i - 1);
+                SingleAdd(aroundList, new Tuple<int, double>(i - width - 1, L0 * Math.Sqrt(2)));
+                SingleAdd(aroundList, new Tuple<int, double>(i + width - 1, L0 * Math.Sqrt(2)));
+                SingleAdd(aroundList, new Tuple<int, double>(i - 1, L0));
             }
-            if (i % width < width - 1)
+            if ((i + 1) % width != 0)
             {
-                SingleAdd(aroundList, i + 1);
+                SingleAdd(aroundList, new Tuple<int, double>(i - width + 1, L0 * Math.Sqrt(2)));
+                SingleAdd(aroundList, new Tuple<int, double>(i + width + 1, L0 * Math.Sqrt(2)));
+                SingleAdd(aroundList, new Tuple<int, double>(i + 1, L0));
             }
-            
-            // SingleAdd(aroundList, i + width - 1);
-            SingleAdd(aroundList, i + width);
-            // SingleAdd(aroundList, i + width + 1);
-        
+            SingleAdd(aroundList, new Tuple<int, double>(i + width, L0));
+
             for (int j = 0; j < aroundList.Count; j++)
             {
-                if (aroundList[j] >= 0 && aroundList[j] < gos.Length)
+                if (aroundList[j].Item1 >= 0 && aroundList[j].Item1 < gos.Length)
                 {
+                    // Debug.Log(string.Format("i : {0} j : {1}", i, aroundList[j].Item1));
                     GameObject go1 = gos[i];
                     particle info1 = infos[i];
-                    GameObject go2 = gos[aroundList[j]];
-                    particle info2 = infos[aroundList[j]];
+                    GameObject go2 = gos[aroundList[j].Item1];
+                    particle info2 = infos[aroundList[j].Item1];
                     // Debug.Log(string.Format("{0} {1}", i, aroundList[j]));
-                    SpringSimulation(go1, info1, go2, info2);
+                    SpringSimulation(go1, info1, go2, info2, aroundList[j].Item2);
                     
                 }
             }
@@ -128,11 +138,11 @@ public class Spring : MonoBehaviour
         }
     }
 
-    void SpringSimulation(GameObject go1, particle info1, GameObject go2, particle info2)
+    void SpringSimulation(GameObject go1, particle info1, GameObject go2, particle info2, double iNormalLen)
     {
         CheckInertia(go1, info1);
         CheckInertia(go2, info2);
-        CheckSpring(go1, info1, go2, info2);
+        CheckSpring(go1, info1, go2, info2, iNormalLen);
     }
 
     private void CheckInertia(GameObject go, particle info)
@@ -144,7 +154,7 @@ public class Spring : MonoBehaviour
         info.curPos = offsetVector3 + info.curPos;
     }
 
-    private void CheckSpring(GameObject go1, particle info1, GameObject go2, particle info2)
+    private void CheckSpring(GameObject go1, particle info1, GameObject go2, particle info2, double iNormalLen)
     {
         Vector3 delLen = go1.transform.position - go2.transform.position;
 
@@ -153,17 +163,9 @@ public class Spring : MonoBehaviour
 
         if (delLen.magnitude < Lmin)
         {
-            // 弹簧异常
-            float iExtentOfCritical = (Lmin - delLen.magnitude) / (Lmin - Lcritical);
-
-            if (iExtentOfCritical <= 0.99)
-            {
-                reverse = true;
-                iExtentOfCritical = iExtentOfCritical - 0.01f;
-            }
-
-            speed1 = info1.speed * (1 - iExtentOfCritical) * (reverse ? -1 : 1);
-            speed2 = info2.speed * (1 - iExtentOfCritical) * (reverse ? -1 : 1);
+            // // 弹簧异常 简单当做反弹处理
+            speed1 = -speed1;
+            speed2 = -speed2;
 
         }
         else
@@ -173,7 +175,7 @@ public class Spring : MonoBehaviour
             Vector3 elasF1;
             Vector3 elasF2;
 
-            elasF1 = -(delLen.magnitude - L0) * elastic * delLen / delLen.magnitude - damp * (speed1 - speed2);
+            elasF1 = -(delLen.magnitude - (float)iNormalLen) * elastic * delLen / delLen.magnitude - damp * (speed1 - speed2);
             elasF2 = -elasF1;
 
             // 加速度
