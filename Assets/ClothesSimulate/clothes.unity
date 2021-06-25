@@ -938,6 +938,7 @@ MonoBehaviour:
   Lmin: 1
   Lmam: 5
   Lcritical: 0.5
+  acceleration: 0.01
 --- !u!1 &1682364011
 GameObject:
   m_ObjectHideFlags: 0
