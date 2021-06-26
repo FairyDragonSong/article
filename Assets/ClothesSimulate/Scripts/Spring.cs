@@ -91,8 +91,8 @@ public class Spring : MonoBehaviour
     {
         yield return new WaitForSeconds(1);
 
-        gos[0].transform.Translate(-Vector3.right * 0.1f);
-        gos[1].transform.Translate(Vector3.right * 0.1f);
+        gos[0].transform.Translate(-Vector3.right);
+        gos[1].transform.Translate(Vector3.right);
     }
 
     void OnGUI()
@@ -106,7 +106,7 @@ public class Spring : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        // ResetPos();
     }
 
     void ResetPos()
@@ -148,12 +148,12 @@ public class Spring : MonoBehaviour
                     GameObject go2 = gos[aroundList[j].Item1];
                     particle info2 = infos[aroundList[j].Item1];
                     SpringSimulation(go1, info1, go2, info2, aroundList[j].Item2);
-                    
+
                 }
             }
         }
 
-        HookPoints();
+        // HookPoints();
     }
 
     public void HookPoints()
@@ -174,9 +174,16 @@ public class Spring : MonoBehaviour
 
     void SpringSimulation(GameObject go1, particle info1, GameObject go2, particle info2, double iNormalLen)
     {
-        CheckInertia(go1, info1);
-        CheckInertia(go2, info2);
-        CheckSpring(go1, info1, go2, info2, iNormalLen);
+        // CheckInertia(go1, info1);
+        // CheckInertia(go2, info2);
+
+        Vector3 delLen = go1.transform.localPosition - go2.transform.localPosition;
+        Vector3 prePrePos1 = transform.InverseTransformPoint(info1.prePos);
+        Vector3 prePrePos2 = transform.InverseTransformPoint(info2.prePos);
+        Vector3 speed1 = (go1.transform.localPosition - prePrePos1) / Time.deltaTime;
+        Vector3 speed2 = (go2.transform.localPosition - prePrePos2) / Time.deltaTime;
+        CheckSpring(go1, info1, iNormalLen, delLen, speed1, speed2);
+        CheckSpring(go2, info2, iNormalLen, -delLen, speed2, speed1);
     }
 
     private void CheckInertia(GameObject go, particle info)
@@ -184,59 +191,43 @@ public class Spring : MonoBehaviour
         Vector3 realMoveDis = go.transform.position - info.prePos;
         Vector3 offsetVector3 = realMoveDis * inertia * 0.9f;
 
-        // go.transform.position = offsetVector3 + info.curPos;
         info.curPos = offsetVector3 + info.curPos;
     }
 
-    private void CheckSpring(GameObject go1, particle info1, GameObject go2, particle info2, double iNormalLen)
+    private void CheckSpring(GameObject go, particle info, double iNormalLen, Vector3 delLen, Vector3 speed1, Vector3 speed2)
     {
-        Vector3 delLen = go1.transform.position - go2.transform.position;
-
-        Vector3 speed1 = (go1.transform.position - info1.prePos) / Time.deltaTime;
-        Vector3 speed2 = (go2.transform.position - info2.prePos) / Time.deltaTime;
+        Vector3 curPrePos = transform.InverseTransformPoint(info.curPos);
 
         if (delLen.magnitude < Lmin)
         {
-            // // 弹簧异常 简单当做反弹处理
+            // 弹簧异常 简单当做反弹处理
             speed1 = -speed1;
-            speed2 = -speed2;
 
         }
         else
         {
             // 阻尼力和弹力计算
-            Vector3 elasF1;
-            Vector3 elasF2;
+            Vector3 elasF;
 
-            elasF1 = -(delLen.magnitude - (float)iNormalLen) * elastic * delLen / delLen.magnitude - damp * (speed1 - speed2);
-            elasF2 = -elasF1;
+            elasF = -(delLen.magnitude - (float)iNormalLen) * elastic * delLen / delLen.magnitude - damp * (speed1 - speed2);
 
             // 自身重力
-            elasF1 = elasF1 + acceleration * info1.mass * Vector3.down;
-            elasF2 = elasF2 + acceleration * info2.mass * Vector3.down;
+            // elasF1 = elasF1 + acceleration * info.mass * Vector3.down;
 
             // 加速度
-            Vector3 a1 = elasF1 / info1.mass;
-            Vector3 a2 = elasF2 / info2.mass;
+            Vector3 a1 = elasF / info.mass;
 
             speed1 += a1 * Time.deltaTime;
-            speed2 += a2 * Time.deltaTime;
 
-            info1.speed = speed1;
-            info2.speed = speed2;
+            info.speed = speed1;
         }
 
-        Vector3 offset1 = speed1 * Time.deltaTime;
-        Vector3 offset2 = speed2 * Time.deltaTime;
+        Vector3 offset = speed1 * Time.deltaTime;
 
-
-        go1.transform.position = info1.curPos + offset1;
-        go2.transform.position = info2.curPos + offset2;
+        go.transform.localPosition = curPrePos + offset;
 
         // 数据保存
-        info1.prePos = info1.curPos;
-        info2.prePos = info2.curPos;
-        info1.curPos = go1.transform.position;
-        info2.curPos = go2.transform.position;
+        info.prePos = info.curPos;
+        info.curPos = go.transform.position;
     }
 }
