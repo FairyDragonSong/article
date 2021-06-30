@@ -17,6 +17,9 @@ public class Spring : MonoBehaviour
     private Vector3 hookPos1;
     private Vector3 hookPos2;
 
+    private Vector3 objMove;
+    private Vector3 objPrePosition;
+
     CoroutineQueue queue;
 
     public int width = 2;
@@ -35,6 +38,9 @@ public class Spring : MonoBehaviour
     /// 弹力
     /// </summary>
     public float elastic = 0.5f;
+
+
+    public float parti_elastic = 0.5f;
 
     /// <summary>
     /// 惯性
@@ -66,6 +72,8 @@ public class Spring : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        objPrePosition = transform.position;
+
         for (int i = 0; i < gos.Length; i++)
         {
             particle p = new particle();
@@ -93,6 +101,9 @@ public class Spring : MonoBehaviour
 
         gos[0].transform.Translate(-Vector3.right);
         gos[1].transform.Translate(Vector3.right);
+
+        infos[0].curPos = gos[0].transform.position;
+        infos[1].curPos = gos[1].transform.position;
     }
 
     void OnGUI()
@@ -106,6 +117,8 @@ public class Spring : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        objMove = transform.position - objPrePosition;
+        objPrePosition = transform.position;
         // ResetPos();
     }
 
@@ -119,6 +132,12 @@ public class Spring : MonoBehaviour
 
     void LateUpdate()
     {
+        for (int i = 0; i < gos.Length; i++)
+        {
+            //惯性
+            // CheckInertia(gos[i], infos[i]);
+        }
+
         for (int i = 0; i < gos.Length; i++)
         {
             List<Tuple<int, double>> aroundList = new List<Tuple<int, double>>();
@@ -154,6 +173,10 @@ public class Spring : MonoBehaviour
         }
 
         // HookPoints();
+        for (int i = 0; i < gos.Length; i++)
+        {
+            ApplyPosition(gos[i], infos[i]);
+        }
     }
 
     public void HookPoints()
@@ -174,24 +197,36 @@ public class Spring : MonoBehaviour
 
     void SpringSimulation(GameObject go1, particle info1, GameObject go2, particle info2, double iNormalLen)
     {
-        // CheckInertia(go1, info1);
-        // CheckInertia(go2, info2);
-
-        Vector3 delLen = go1.transform.localPosition - go2.transform.localPosition;
+        Vector3 delLen = transform.InverseTransformPoint(info1.curPos) - transform.InverseTransformPoint(info2.curPos); //go1.transform.localPosition - go2.transform.localPosition;
         Vector3 prePrePos1 = transform.InverseTransformPoint(info1.prePos);
         Vector3 prePrePos2 = transform.InverseTransformPoint(info2.prePos);
-        Vector3 speed1 = (go1.transform.localPosition - prePrePos1) / Time.deltaTime;
-        Vector3 speed2 = (go2.transform.localPosition - prePrePos2) / Time.deltaTime;
+
+        Vector3 curPos1 = transform.InverseTransformPoint(info1.curPos);
+        Vector3 curPos2 = transform.InverseTransformPoint(info2.curPos);
+
+        Vector3 speed1 = (curPos1 - prePrePos1) / Time.deltaTime;
+        Vector3 speed2 = (curPos2 - prePrePos2) / Time.deltaTime;
         CheckSpring(go1, info1, iNormalLen, delLen, speed1, speed2);
         CheckSpring(go2, info2, iNormalLen, -delLen, speed2, speed1);
     }
 
     private void CheckInertia(GameObject go, particle info)
     {
-        Vector3 realMoveDis = go.transform.position - info.prePos;
-        Vector3 offsetVector3 = realMoveDis * inertia * 0.9f;
+        Vector3 v = info.curPos - info.prePos;
+        Vector3 offsetVector3 = objMove * inertia;
+        info.prePos = offsetVector3 + info.curPos;
+        
+        info.curPos += v * (1 - damp) + offsetVector3;
 
-        info.curPos = offsetVector3 + info.curPos;
+        Whipping(go, info);
+    }
+
+    private void Whipping(GameObject go, particle info)
+    {
+        Vector3 resPos = transform.TransformPoint(info.initPos);
+        Vector3 d = resPos - info.curPos;
+        info.curPos += d * parti_elastic;
+
     }
 
     private void CheckSpring(GameObject go, particle info, double iNormalLen, Vector3 delLen, Vector3 speed1, Vector3 speed2)
@@ -230,4 +265,11 @@ public class Spring : MonoBehaviour
         info.prePos = info.curPos;
         info.curPos = go.transform.position;
     }
+
+    private void ApplyPosition(GameObject go, particle info)
+    {
+        // go.transform.position = info.curPos;
+        // info.prePos = info.curPos;
+    }
+
 }
