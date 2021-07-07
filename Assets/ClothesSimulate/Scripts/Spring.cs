@@ -35,6 +35,11 @@ public class Spring : MonoBehaviour
     public float damp = 1;
 
     /// <summary>
+    /// 阻尼
+    /// </summary>
+    public float parti_damp = 1;
+
+    /// <summary>
     /// 弹力
     /// </summary>
     public float elastic = 0.5f;
@@ -83,16 +88,16 @@ public class Spring : MonoBehaviour
             infos.Add(p);
             if (i == gos.Length - 1)
             {
-                hookPos2 = gos[i].transform.position;
+                hookPos2 = gos[i].transform.localPosition;
             }
             else if (i == gos.Length - width)
             {
-                hookPos1 = gos[i].transform.position;
+                hookPos1 = gos[i].transform.localPosition;
             }
         }
 
         queue = new CoroutineQueue(2, StartCoroutine);
-        queue.Run(DelayAddForce());
+        // queue.Run(DelayAddForce());
     }
 
     IEnumerator DelayAddForce()
@@ -119,15 +124,6 @@ public class Spring : MonoBehaviour
     {
         objMove = transform.position - objPrePosition;
         objPrePosition = transform.position;
-        // ResetPos();
-    }
-
-    void ResetPos()
-    {
-        for (int i = 0; i < gos.Length; i++)
-        {
-            gos[i].transform.localPosition = infos[i].initPos;
-        }
     }
 
     void LateUpdate()
@@ -135,8 +131,9 @@ public class Spring : MonoBehaviour
         for (int i = 0; i < gos.Length; i++)
         {
             //惯性
-            // CheckInertia(gos[i], infos[i]);
+            CheckInertia(gos[i], infos[i]);
         }
+
 
         for (int i = 0; i < gos.Length; i++)
         {
@@ -173,18 +170,13 @@ public class Spring : MonoBehaviour
         }
 
         // HookPoints();
-        for (int i = 0; i < gos.Length; i++)
-        {
-            ApplyPosition(gos[i], infos[i]);
-        }
+
     }
 
     public void HookPoints()
     {
-        infos[gos.Length - 1].prePos = infos[gos.Length - 1].curPos = hookPos2;
-        gos[gos.Length - 1].transform.position = hookPos2;
-        infos[gos.Length - width].prePos = infos[gos.Length - width].curPos = hookPos1;
-        gos[gos.Length - width].transform.position = hookPos1;
+        gos[gos.Length - 1].transform.localPosition = hookPos2;
+        gos[gos.Length - width].transform.localPosition = hookPos1;
     }
 
     public void SingleAdd<T>(List<T> list, T value)
@@ -212,11 +204,16 @@ public class Spring : MonoBehaviour
 
     private void CheckInertia(GameObject go, particle info)
     {
+        if (objMove.magnitude > 0)
+        {
+            
+        }
+
         Vector3 v = info.curPos - info.prePos;
         Vector3 offsetVector3 = objMove * inertia;
-        info.prePos = offsetVector3 + info.curPos;
-        
-        info.curPos += v * (1 - damp) + offsetVector3;
+        // info.prePos = offsetVector3 + info.curPos;
+        info.curPos += v * (1 - parti_damp) + offsetVector3;
+
 
         Whipping(go, info);
     }
@@ -247,7 +244,7 @@ public class Spring : MonoBehaviour
             elasF = -(delLen.magnitude - (float)iNormalLen) * elastic * delLen / delLen.magnitude - damp * (speed1 - speed2);
 
             // 自身重力
-            // elasF1 = elasF1 + acceleration * info.mass * Vector3.down;
+            // elasF = elasF + acceleration * info.mass * Vector3.down;
 
             // 加速度
             Vector3 a1 = elasF / info.mass;
@@ -264,12 +261,6 @@ public class Spring : MonoBehaviour
         // 数据保存
         info.prePos = info.curPos;
         info.curPos = go.transform.position;
-    }
-
-    private void ApplyPosition(GameObject go, particle info)
-    {
-        // go.transform.position = info.curPos;
-        // info.prePos = info.curPos;
     }
 
 }
